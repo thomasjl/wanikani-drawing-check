@@ -1,14 +1,14 @@
 <!doctype html>
-<html lang=\"fr\">
+<html lang="fr">
 <head>
-  <meta charset=\"utf-8\" />
-  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />
-  <title>Kanji Write Check — WaniKani (v2, SRS + Dashboard, FIX)</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Kanji Write Check — WaniKani (v2, SRS + Dashboard)</title>
   <style>
     :root { color-scheme: light dark; }
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, \"Noto Sans JP\", Arial, sans-serif; margin: 2rem; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans JP", Arial, sans-serif; margin: 2rem; }
     header { display:flex; gap:1rem; flex-wrap:wrap; align-items:flex-end; }
-    input[type=\"text\"], select { padding:.5rem; font-size:1rem; }
+    input[type="text"], select { padding:.5rem; font-size:1rem; }
     button { padding:.6rem 1rem; font-size:1rem; margin-right:.5rem; cursor:pointer; }
     .card { border:1px solid #8883; border-radius:12px; padding:1rem; margin-top:1rem; }
     .label { font-size:.9rem; color:#666; }
@@ -32,69 +32,69 @@
   </style>
 </head>
 <body>
-<header id=\"app-header\">
-  <div id=\"token-block\">
-    <div class=\"label\">Token WaniKani (lecture seule)</div>
-    <input id=\"token\" type=\"text\" size=\"48\" placeholder=\"wk_...\" />
-    <button id=\"saveToken\">Enregistrer (cookie)</button>
-    <button id=\"clearToken\">Effacer le cookie</button>
+<header id="app-header">
+  <div id="token-block">
+    <div class="label">Token WaniKani (lecture seule)</div>
+    <input id="token" type="text" size="48" placeholder="wk_..." />
+    <button id="saveToken">Enregistrer (cookie)</button>
+    <button id="clearToken">Effacer le cookie</button>
   </div>
-  <div id=\"mode-block\">
-    <div class=\"label\">Sélection</div>
-    <select id=\"mode\">
-      <option value=\"now\">Kanji à réviser maintenant</option>
-      <option value=\"unlocked\">Tous les kanji débloqués (non brûlés)</option>
-      <option value=\"level\">Kanji d’un niveau précis…</option>
+  <div id="mode-block">
+    <div class="label">Sélection</div>
+    <select id="mode">
+      <option value="now">Kanji à réviser maintenant</option>
+      <option value="unlocked">Tous les kanji débloqués (non brûlés)</option>
+      <option value="level">Kanji d’un niveau précis…</option>
     </select>
-    <input id=\"level\" type=\"number\" min=\"1\" max=\"60\" placeholder=\"lvl\" style=\"width:5rem; display:none;\" />
-    <button id=\"load\">Charger</button>
+    <input id="level" type="number" min="1" max="60" placeholder="lvl" style="width:5rem; display:none;" />
+    <button id="load">Charger</button>
   </div>
 </header>
 
-<div id=\"status\" class=\"hint\"></div>
-<div id=\"error\" class=\"error\"></div>
+<div id="status" class="hint"></div>
+<div id="error" class="error"></div>
 
-<div id=\"card\" class=\"card\" hidden>
-  <div class=\"label\">Sens (anglais)</div>
-  <div id=\"meaning\" class=\"meaning\"></div>
+<div id="card" class="card" hidden>
+  <div class="label">Sens (anglais)</div>
+  <div id="meaning" class="meaning"></div>
 
-  <div id=\"kanji\" class=\"kanji\" lang=\"ja\"></div>
-  <div id=\"readings\" class=\"readings\"></div>
+  <div id="kanji" class="kanji" lang="ja"></div>
+  <div id="readings" class="readings"></div>
 
-  <div class=\"controls\">
-    <button id=\"show\">Afficher le kanji</button>
-    <button id=\"success\">J’ai réussi ✍️</button>
-    <button id=\"fail\">Je me suis trompé</button>
-    <button id=\"next\">Suivant ▶︎</button>
+  <div class="controls">
+    <button id="show">Afficher le kanji</button>
+    <button id="success">J’ai réussi ✍️</button>
+    <button id="fail">Je me suis trompé</button>
+    <button id="next">Suivant ▶︎</button>
   </div>
-  <div id=\"stats\" class=\"stats\"></div>
+  <div id="stats" class="stats"></div>
 </div>
 
-<div id=\"dashboard\" class=\"dash\">
+<div id="dashboard" class="dash">
   <h2>📊 Dashboard SRS</h2>
-  <div class=\"row\">
-    <span class=\"badge\" id=\"dash-acc\">Acc.: —</span>
-    <span class=\"badge\" id=\"dash-now\">Due now: —</span>
-    <span class=\"badge\" id=\"dash-24\">24h: —</span>
-    <span class=\"badge\" id=\"dash-stages\">A:— | G:— | M:— | E:— | B:—</span>
+  <div class="row">
+    <span class="badge" id="dash-acc">Acc.: —</span>
+    <span class="badge" id="dash-now">Due now: —</span>
+    <span class="badge" id="dash-24">24h: —</span>
+    <span class="badge" id="dash-stages">A:— | G:— | M:— | E:— | B:—</span>
   </div>
-  <div class=\"chart\" id=\"chart\"></div>
+  <div class="chart" id="chart"></div>
 </div>
 
-<details id=\"diagnostics\">
+<details id="diagnostics">
   <summary>🔎 Diagnostics (headers & requêtes)</summary>
-  <div class=\"diag-grid\" id=\"diag-grid\">
-    <div>Dernière URL :</div><div id=\"diag-url\">—</div>
-    <div>HTTP Status :</div><div id=\"diag-status\">—</div>
-    <div>RateLimit-Limit :</div><div id=\"diag-limit\">—</div>
-    <div>RateLimit-Remaining :</div><div id=\"diag-remaining\">—</div>
-    <div>RateLimit-Reset (epoch s) :</div><div id=\"diag-reset\">—</div>
-    <div>Last-Modified :</div><div id=\"diag-last\">—</div>
-    <div>ETag :</div><div id=\"diag-etag\">—</div>
+  <div class="diag-grid" id="diag-grid">
+    <div>Dernière URL :</div><div id="diag-url">—</div>
+    <div>HTTP Status :</div><div id="diag-status">—</div>
+    <div>RateLimit-Limit :</div><div id="diag-limit">—</div>
+    <div>RateLimit-Remaining :</div><div id="diag-remaining">—</div>
+    <div>RateLimit-Reset (epoch s) :</div><div id="diag-reset">—</div>
+    <div>Last-Modified :</div><div id="diag-last">—</div>
+    <div>ETag :</div><div id="diag-etag">—</div>
   </div>
 </details>
 
-<footer class=\"hint\">
+<footer class="hint">
   Conseils : dessine sur papier, puis <b>affiche</b> le kanji pour te corriger.
   API : <code>Authorization: Bearer &lt;token&gt;</code> et <code>Wanikani-Revision: 20170710</code>.
 </footer>
@@ -104,6 +104,7 @@
   const API = 'https://api.wanikani.com/v2';
   const REVISION = '20170710';
   const state = { queue: [], index: 0, ok: 0, ko: 0, cache: JSON.parse(localStorage.getItem('wk_subject_cache')||'{}'), lastHeaders:{}, lastUrl:'', lastStatus:'' };
+
   const SRS_STAGES = {1:{name:'Apprentice 1',intervalHours:4},2:{name:'Apprentice 2',intervalHours:8},3:{name:'Apprentice 3',intervalHours:24},4:{name:'Apprentice 4',intervalHours:48},5:{name:'Guru 1',intervalHours:24*7},6:{name:'Guru 2',intervalHours:24*14},7:{name:'Master',intervalHours:24*30},8:{name:'Enlightened',intervalHours:24*120},9:{name:'Burned',intervalHours:Infinity}};
   function applyIncorrectPenalty(currentStage, wrongCount){ const c=Math.ceil(wrongCount/2); const f=(currentStage>=5)?2:1; return Math.max(1, currentStage - c*f); }
 
@@ -111,37 +112,9 @@
   function info(msg){ const s=$('#status'); if (s) s.textContent=msg; }
   function showError(err){ const e=$('#error'); const msg=(typeof err==='string')?err:(err?.message||'Erreur inconnue'); if(e) e.textContent=msg; }
   function resetUI(){ const e=$('#error'), s=$('#status'), card=$('#card'), k=$('#kanji'), r=$('#readings'); if(e) e.textContent=''; if(s) s.textContent=''; if(card) card.hidden=true; if(k) k.style.display='none'; if(r) r.style.display='none'; state.ok=0; state.ko=0; updateStats(); }
+  function must(selector){ const el=$(selector); if(!el){ throw new Error(`Missing element: ${selector}`); } return el; }
 
-  function ensureUiElements(){
-    const header = $('#app-header') || document.body;
-    if (!$('#token')) {
-      const block = document.createElement('div'); block.id='token-block';
-      block.innerHTML = `<div class="label">Token WaniKani (lecture seule)</div>
-        <input id="token" type="text" size="48" placeholder="wk_..." />
-        <button id="saveToken">Enregistrer (cookie)</button>
-        <button id="clearToken">Effacer le cookie</button>`;
-      header.prepend(block);
-    }
-    if (!$('#mode')) {
-      const block = document.createElement('div'); block.id='mode-block';
-      block.innerHTML = `<div class="label">Sélection</div>
-        <select id="mode"><option value="now">Kanji à réviser maintenant</option><option value="unlocked">Tous les kanji débloqués (non brûlés)</option><option value="level">Kanji d’un niveau précis…</option></select>
-        <input id="level" type="number" min="1" max="60" placeholder="lvl" style="width:5rem; display:none;" />
-        <button id="load">Charger</button>`;
-      header.appendChild(block);
-    }
-    if (!$('#card')){
-      const card = document.createElement('div'); card.id='card'; card.className='card'; card.hidden=true;
-      card.innerHTML = `<div class="label">Sens (anglais)</div><div id="meaning" class="meaning"></div>
-        <div id="kanji" class="kanji" lang="ja"></div><div id="readings" class="readings"></div>
-        <div class="controls"><button id="show">Afficher le kanji</button><button id="success">J’ai réussi ✍️</button><button id="fail">Je me suis trompé</button><button id="next">Suivant ▶︎</button></div>
-        <div id="stats" class="stats"></div>`;
-      document.body.appendChild(card);
-    }
-  }
-
-  function must(selector){ const el=$(selector); if(!el){ console.warn(`[Init] ${selector} introuvable, création auto.`); ensureUiElements(); return $(selector); } return el; }
-
+  // Cookies token
   function setTokenCookie(token){ const maxAge=60*60*24*365; document.cookie = `wk_token=${encodeURIComponent(token)}; Max-Age=${maxAge}; Path=/; SameSite=Lax; Secure`; }
   function getTokenCookie(){ const m=document.cookie.match(/(?:^|; )wk_token=([^;]*)/); return m?decodeURIComponent(m[1]):''; }
   function clearTokenCookie(){ document.cookie=`wk_token=; Max-Age=0; Path=/; SameSite=Lax; Secure`; }
@@ -151,7 +124,7 @@
 
   async function fetchJson(url,token){ const res=await fetch(url,{headers:{'Authorization':`Bearer ${token}`,'Wanikani-Revision':REVISION}}); updateDiagnostics(url,res); if(res.status===429){ const reset=Number(res.headers.get('RateLimit-Reset'))||0; const now=Math.floor(Date.now()/1000); const waitMs=Math.max((reset-now),3)*1000; info(`⏳ ${Math.round(waitMs/1000)}s…`); await new Promise(r=>setTimeout(r,waitMs)); return fetchJson(url,token);} if(!res.ok){ let body=''; try{body=await res.text();}catch{} let msg=`HTTP ${res.status} — ${res.statusText}`; if(body){ try{ const j=JSON.parse(body); if(j.error) msg=`HTTP ${res.status} — ${j.error}`;}catch{ msg=`HTTP ${res.status} — ${body}`; } } throw new Error(msg);} return res.json(); }
 
-  async function fetchAssignments(token,modeSelect,levelInput){ const mode=modeSelect.value; let qs=`subject_types=kanji&hidden=false`; if(mode==='now'){ const now=new Date().toISOString(); qs+=`&available_before=${encodeURIComponent(now)}`; } else if(mode==='unlocked'){ qs+=`&unlocked=true&burned=false`; } else { const lvl=Number((levelInput&&levelInput.value)||0); if(!lvl||lvl<1||lvl>60) throw new Error('Niveau 1–60.'); qs+=`&levels=${lvl}&unlocked=true&burned=false`; } const url=`${API}/assignments?${qs}`; const first=await fetchJson(url,token); let items=first.data||[]; let next=first.pages?.next_url; while(next){ const page=await fetchJson(next,token); items=items.concat(page.data||[]); next=page.pages?.next_url; } return items; }
+  async function fetchAssignments(token,modeSelect,levelInput){ const mode=modeSelect.value; let qs=`subject_types=kanji&hidden=false`; if(mode==='now'){ const now=new Date().toISOString(); qs+=`&available_before=${encodeURIComponent(now)}`; info('Chargement des kanji “dus” maintenant…'); } else if(mode==='unlocked'){ qs+=`&unlocked=true&burned=false`; info('Chargement des kanji débloqués…'); } else { const lvl=Number((levelInput&&levelInput.value)||0); if(!lvl||lvl<1||lvl>60) throw new Error('Niveau 1–60.'); qs+=`&levels=${lvl}&unlocked=true&burned=false`; info(`Chargement des kanji du niveau ${lvl}…`); } const url=`${API}/assignments?${qs}`; const first=await fetchJson(url,token); let items=first.data||[]; let next=first.pages?.next_url; while(next){ const page=await fetchJson(next,token); items=items.concat(page.data||[]); next=page.pages?.next_url; } return items; }
 
   async function fetchSubjects(ids,token){ const unique=Array.from(new Set(ids)); const subjects=[]; const chunkSize=950; for(let i=0;i<unique.length;i+=chunkSize){ const chunk=unique.slice(i,i+chunkSize); const url=`${API}/subjects?ids=${chunk.join(',')}`; try{ const json=await fetchJson(url,token); subjects.push(...(json.data||[])); let next=json.pages?.next_url; while(next){ const page=await fetchJson(next,token); subjects.push(...(page.data||[])); next=page.pages?.next_url; } }catch(e){ for(const id of chunk){ if(state.cache[id]){ subjects.push(state.cache[id]); continue;} const single=await fetchJson(`${API}/subjects/${id}`,token); const normalized=single.data?single:{data:single}; state.cache[id]=normalized; subjects.push(normalized);} localStorage.setItem('wk_subject_cache',JSON.stringify(state.cache)); } } return subjects.filter(s=> (s.data?.object||s.object)==='kanji' || s.data?.characters ); }
 
@@ -172,7 +145,6 @@
   function updateStats(){ const s=$('#stats'); if(s) s.textContent=`Score: ${state.ok} bon / ${state.ko} faux • Item ${state.index+1}/${Math.max(1,state.queue.length)}`; }
 
   document.addEventListener('DOMContentLoaded', () => {
-    ensureUiElements();
     const tokenInput = must('#token'); const saveBtn=must('#saveToken'); const clearBtn=must('#clearToken');
     const modeSelect=must('#mode'); const levelInput=must('#level'); const loadBtn=must('#load');
     const showBtn=must('#show'); const successBtn=must('#success'); const failBtn=must('#fail'); const nextBtn=must('#next');
