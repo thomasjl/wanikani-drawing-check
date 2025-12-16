@@ -1,15 +1,14 @@
-
 <!doctype html>
-<html lang="fr">
+<html lang=\"fr\">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Kanji Write Check — WaniKani (v2)</title>
+  <meta charset=\"utf-8\" />
+  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />
+  <title>Kanji Write Check — WaniKani (v2, SRS + Dashboard)</title>
   <style>
     :root { color-scheme: light dark; }
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans JP", Arial, sans-serif; margin: 2rem; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, \"Noto Sans JP\", Arial, sans-serif; margin: 2rem; }
     header { display:flex; gap:1rem; flex-wrap:wrap; align-items:flex-end; }
-    input[type="text"], select { padding:.5rem; font-size:1rem; }
+    input[type=\"text\"], select { padding:.5rem; font-size:1rem; }
     button { padding:.6rem 1rem; font-size:1rem; margin-right:.5rem; cursor:pointer; }
     .card { border:1px solid #8883; border-radius:12px; padding:1rem; margin-top:1rem; }
     .label { font-size:.9rem; color:#666; }
@@ -24,72 +23,89 @@
     summary { cursor:pointer; }
     .diag-grid { display:grid; grid-template-columns: 220px 1fr; gap:.25rem .75rem; }
     .diag-grid div:nth-child(odd) { color:#666; }
-    code { background:#0001; padding:.05rem .25rem; border-radius:4px; }
+    .dash { margin-top:1rem; padding:1rem; border:1px dashed #8884; border-radius:12px; }
+    .dash h2 { margin:.2rem 0 1rem; font-size:1.2rem; }
+    .dash .row { display:flex; gap:1rem; flex-wrap:wrap; }
+    .badge { padding:.25rem .5rem; border-radius:8px; background:#8881; }
+    .chart { margin-top:1rem; height:120px; display:flex; align-items:flex-end; gap:.4rem; }
+    .bar { width:22px; background:#4a8; border-radius:4px 4px 0 0; }
+    .bar-label { font-size:.75rem; text-align:center; margin-top:.25rem; }
   </style>
 </head>
 <body>
 <header>
   <div>
-    <div class="label">Token WaniKani (lecture seule)</div>
-    <!-- MODE "EN CLAIR" : pour préremplir le token en dur, décommente la ligne suivante :
-    <input id="token" type="text" size="48" value="09c154e9-8a05-4c21-a1f2-6196196c1be1" />
+    <div class=\"label\">Token WaniKani (lecture seule)</div>
+    <!-- Pour préremplir en clair, décommentez la ligne suivante :
+    <input id=\"token\" type=\"text\" size=\"48\" value=\"09c154e9-8a05-4c21-a1f2-6196196c1be1\" />
     -->
-    <input id="token" type="text" size="48" placeholder="wk_..." />
-    <button id="saveToken">Enregistrer (cookie)</button>
-    <button id="clearToken">Effacer le cookie</button>
+    <input id=\"token\" type=\"text\" size=\"48\" placeholder=\"wk_...\" />
+    <button id=\"saveToken\">Enregistrer (cookie)</button>
+    <button id=\"clearToken\">Effacer le cookie</button>
   </div>
   <div>
-    <div class="label">Sélection</div>
-    <select id="mode">
-      <option value="now">Kanji à réviser maintenant</option>
-      <option value="unlocked">Tous les kanji débloqués (non brûlés)</option>
-      <option value="level">Kanji d’un niveau précis…</option>
+    <div class=\"label\">Sélection</div>
+    <select id=\"mode\">
+      <option value=\"now\">Kanji à réviser maintenant</option>
+      <option value=\"unlocked\">Tous les kanji débloqués (non brûlés)</option>
+      <option value=\"level\">Kanji d’un niveau précis…</option>
     </select>
-    <input id="level" type="number" min="1" max="60" placeholder="lvl" style="width:5rem; display:none;" />
-    <button id="load">Charger</button>
+    <input id=\"level\" type=\"number\" min=\"1\" max=\"60\" placeholder=\"lvl\" style=\"width:5rem; display:none;\" />
+    <button id=\"load\">Charger</button>
   </div>
 </header>
 
-<div id="status" class="hint"></div>
-<div id="error" class="error"></div>
+<div id=\"status\" class=\"hint\"></div>
+<div id=\"error\" class=\"error\"></div>
 
-<div id="card" class="card" hidden>
-  <div class="label">Sens (anglais)</div>
-  <div id="meaning" class="meaning"></div>
+<div id=\"card\" class=\"card\" hidden>
+  <div class=\"label\">Sens (anglais)</div>
+  <div id=\"meaning\" class=\"meaning\"></div>
 
-  <div id="kanji" class="kanji" lang="ja"></div>
-  <div id="readings" class="readings"></div>
+  <div id=\"kanji\" class=\"kanji\" lang=\"ja\"></div>
+  <div id=\"readings\" class=\"readings\"></div>
 
-  <div class="controls">
-    <button id="show">Afficher le kanji</button>
-    <button id="success">J’ai réussi ✍️</button>
-    <button id="fail">Je me suis trompé</button>
-    <button id="next">Suivant ▶︎</button>
+  <div class=\"controls\">
+    <button id=\"show\">Afficher le kanji</button>
+    <button id=\"success\">J’ai réussi ✍️</button>
+    <button id=\"fail\">Je me suis trompé</button>
+    <button id=\"next\">Suivant ▶︎</button>
   </div>
-  <div id="stats" class="stats"></div>
+  <div id=\"stats\" class=\"stats\"></div>
 </div>
 
-<details id="diagnostics">
+<div id=\"dashboard\" class=\"dash\">
+  <h2>📊 Dashboard SRS</h2>
+  <div class=\"row\">
+    <span class=\"badge\" id=\"dash-acc\">Acc.: —</span>
+    <span class=\"badge\" id=\"dash-now\">Due now: —</span>
+    <span class=\"badge\" id=\"dash-24\">24h: —</span>
+    <span class=\"badge\" id=\"dash-stages\">A:— | G:— | M:— | E:— | B:—</span>
+  </div>
+  <div class=\"chart\" id=\"chart\"></div>
+</div>
+
+<details id=\"diagnostics\">
   <summary>🔎 Diagnostics (headers & requêtes)</summary>
-  <div class="diag-grid" id="diag-grid">
-    <div>Dernière URL :</div><div id="diag-url">—</div>
-    <div>HTTP Status :</div><div id="diag-status">—</div>
-    <div>RateLimit-Limit :</div><div id="diag-limit">—</div>
-    <div>RateLimit-Remaining :</div><div id="diag-remaining">—</div>
-    <div>RateLimit-Reset (epoch s) :</div><div id="diag-reset">—</div>
-    <div>Last-Modified :</div><div id="diag-last">—</div>
-    <div>ETag :</div><div id="diag-etag">—</div>
+  <div class=\"diag-grid\" id=\"diag-grid\">
+    <div>Dernière URL :</div><div id=\"diag-url\">—</div>
+    <div>HTTP Status :</div><div id=\"diag-status\">—</div>
+    <div>RateLimit-Limit :</div><div id=\"diag-limit\">—</div>
+    <div>RateLimit-Remaining :</div><div id=\"diag-remaining\">—</div>
+    <div>RateLimit-Reset (epoch s) :</div><div id=\"diag-reset\">—</div>
+    <div>Last-Modified :</div><div id=\"diag-last\">—</div>
+    <div>ETag :</div><div id=\"diag-etag\">—</div>
   </div>
 </details>
 
-<footer class="hint">
+<footer class=\"hint\">
   Conseils : dessine sur papier, puis <b>affiche</b> le kanji pour te corriger.
   API : <code>Authorization: Bearer &lt;token&gt;</code> et <code>Wanikani-Revision: 20170710</code>.
 </footer>
 
 <script>
 (() => {
-  // ==== Constantes API (doc officielle 20170710) ====
+  // ==== Constantes API ====
   const API = 'https://api.wanikani.com/v2';
   const REVISION = '20170710';
 
@@ -105,7 +121,25 @@
     lastStatus: ''
   };
 
-  // ==== Helpers DOM/UI ====
+  // ==== SRS ====
+  const SRS_STAGES = {
+    1: { name: 'Apprentice 1', intervalHours: 4 },
+    2: { name: 'Apprentice 2', intervalHours: 8 },
+    3: { name: 'Apprentice 3', intervalHours: 24 },
+    4: { name: 'Apprentice 4', intervalHours: 48 },
+    5: { name: 'Guru 1',       intervalHours: 24*7 },
+    6: { name: 'Guru 2',       intervalHours: 24*14 },
+    7: { name: 'Master',       intervalHours: 24*30 },
+    8: { name: 'Enlightened',  intervalHours: 24*120 },
+    9: { name: 'Burned',       intervalHours: Infinity }
+  };
+  function applyIncorrectPenalty(currentStage, wrongCount) {
+    const incorrect_adjustment_count = Math.ceil(wrongCount / 2);
+    const srs_penalty_factor = (currentStage >= 5) ? 2 : 1;
+    return Math.max(1, currentStage - incorrect_adjustment_count * srs_penalty_factor);
+  }
+
+  // ==== DOM/UI helpers ====
   const $ = (sel) => document.querySelector(sel);
   function info(msg) { const s = $('#status'); if (s) s.textContent = msg; }
   function showError(err) {
@@ -124,43 +158,32 @@
   }
   function must(selector) {
     const el = $(selector);
-    if (!el) {
-      console.error(`[Init] Élément ${selector} introuvable.`);
-      showError(`Élément manquant: ${selector}. Vérifie l'ID dans le HTML.`);
-      throw new Error(`Missing element: ${selector}`);
-    }
+    if (!el) { console.error(`[Init] Élément ${selector} introuvable.`); showError(`Élément manquant: ${selector}.`); throw new Error(`Missing element: ${selector}`); }
     return el;
   }
 
   // ==== Cookies (token) ====
-  // NOTE: En statique, on ne peut pas mettre HttpOnly. On mettra Secure + SameSite=Lax, et un max-age long.
   function setTokenCookie(token) {
     const maxAge = 60 * 60 * 24 * 365; // 1 an
-    // Cookie attribué au chemin racine ; 'Secure' nécessite HTTPS
     document.cookie = `wk_token=${encodeURIComponent(token)}; Max-Age=${maxAge}; Path=/; SameSite=Lax; Secure`;
   }
   function getTokenCookie() {
-    const m = document.cookie.match(/(?:^|; )wk_token=([^;]*)/);
-    return m ? decodeURIComponent(m[1]) : '';
+    const m = document.cookie.match(/(?:^|; )wk_token=([^;]*)/); return m ? decodeURIComponent(m[1]) : '';
   }
-  function clearTokenCookie() {
-    document.cookie = `wk_token=; Max-Age=0; Path=/; SameSite=Lax; Secure`;
-  }
+  function clearTokenCookie() { document.cookie = `wk_token=; Max-Age=0; Path=/; SameSite=Lax; Secure`; }
 
-  // ==== Token (priorité : cookie > input > localStorage pour compat ascendante) ====
   function getToken(tokenInput) {
     const fromCookie = getTokenCookie();
     const fromInput = (tokenInput.value || '').trim();
     const fromLS = (localStorage.getItem('wk_token') || '').trim();
     const t = (fromCookie || fromInput || fromLS).trim();
-    if (!t) throw new Error('⚠️ Token requis. Colle ton token WaniKani (lecture seule) puis “Enregistrer (cookie)”.');
+    if (!t) throw new Error('⚠️ Token requis. Colle ton token puis “Enregistrer (cookie)”.');
     return t;
   }
 
-  // ==== Diagnostics headers ====
+  // ==== Diagnostics ====
   function updateDiagnostics(url, res) {
-    state.lastUrl = url;
-    state.lastStatus = `${res.status} ${res.statusText}`;
+    state.lastUrl = url; state.lastStatus = `${res.status} ${res.statusText}`;
     state.lastHeaders = {
       limit: res.headers.get('RateLimit-Limit'),
       remaining: res.headers.get('RateLimit-Remaining'),
@@ -169,206 +192,187 @@
       last: res.headers.get('Last-Modified')
     };
     const set = (id, v) => { const n = $(id); if (n) n.textContent = v || '—'; };
-    set('#diag-url', state.lastUrl);
-    set('#diag-status', state.lastStatus);
-    set('#diag-limit', state.lastHeaders.limit);
-    set('#diag-remaining', state.lastHeaders.remaining);
-    set('#diag-reset', state.lastHeaders.reset);
-    set('#diag-etag', state.lastHeaders.etag);
-    set('#diag-last', state.lastHeaders.last);
+    set('#diag-url', state.lastUrl); set('#diag-status', state.lastStatus);
+    set('#diag-limit', state.lastHeaders.limit); set('#diag-remaining', state.lastHeaders.remaining);
+    set('#diag-reset', state.lastHeaders.reset); set('#diag-etag', state.lastHeaders.etag); set('#diag-last', state.lastHeaders.last);
   }
 
-  // ==== Fetch JSON avec gestion 429 / erreurs détaillées ====
   async function fetchJson(url, token) {
-    const res = await fetch(url, {
-      headers: { 'Authorization': `Bearer ${token}`, 'Wanikani-Revision': REVISION }
-    });
+    const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}`, 'Wanikani-Revision': REVISION }});
     updateDiagnostics(url, res);
-
     if (res.status === 429) {
-      const reset = Number(res.headers.get('RateLimit-Reset')) || 0;
-      const now = Math.floor(Date.now()/1000);
-      const waitMs = Math.max((reset - now), 3) * 1000;
-      info(`⏳ Rate limit atteint, attente ${Math.round(waitMs/1000)}s…`);
-      await new Promise(r => setTimeout(r, waitMs));
-      return fetchJson(url, token);
+      const reset = Number(res.headers.get('RateLimit-Reset')) || 0; const now = Math.floor(Date.now()/1000);
+      const waitMs = Math.max((reset - now), 3) * 1000; info(`⏳ Rate limit atteint, attente ${Math.round(waitMs/1000)}s…`);
+      await new Promise(r => setTimeout(r, waitMs)); return fetchJson(url, token);
     }
-
     if (!res.ok) {
-      let bodyText = '';
-      try { bodyText = await res.text(); } catch {}
+      let bodyText = ''; try { bodyText = await res.text(); } catch {}
       let msg = `HTTP ${res.status} — ${res.statusText}`;
-      if (bodyText) {
-        try {
-          const j = JSON.parse(bodyText);
-          if (j.error) msg = `HTTP ${res.status} — ${j.error}`;
-        } catch { msg = `HTTP ${res.status} — ${bodyText}`; }
-      }
+      if (bodyText) { try { const j = JSON.parse(bodyText); if (j.error) msg = `HTTP ${res.status} — ${j.error}`; } catch { msg = `HTTP ${res.status} — ${bodyText}`; } }
       throw new Error(msg);
     }
     return res.json();
   }
 
-  // ==== Récupération assignments selon le mode ====
   async function fetchAssignments(token, modeSelect, levelInput) {
-    const mode = modeSelect.value;
-    let qs = `subject_types=kanji&hidden=false`;
-    if (mode === 'now') {
-      const now = new Date().toISOString();
-      qs += `&available_before=${encodeURIComponent(now)}`;
-      info('Chargement des kanji “dus” maintenant…');
-    } else if (mode === 'unlocked') {
-      qs += `&unlocked=true&burned=false`;
-      info('Chargement des kanji débloqués (non brûlés)…');
-    } else {
-      const lvl = Number((levelInput && levelInput.value) || 0);
-      if (!lvl || lvl<1 || lvl>60) throw new Error('Spécifie un niveau entre 1 et 60.');
-      qs += `&levels=${lvl}&unlocked=true&burned=false`;
-      info(`Chargement des kanji du niveau ${lvl}…`);
-    }
+    const mode = modeSelect.value; let qs = `subject_types=kanji&hidden=false`;
+    if (mode === 'now') { const now = new Date().toISOString(); qs += `&available_before=${encodeURIComponent(now)}`; info('Chargement des kanji “dus” maintenant…'); }
+    else if (mode === 'unlocked') { qs += `&unlocked=true&burned=false`; info('Chargement des kanji débloqués…'); }
+    else { const lvl = Number((levelInput && levelInput.value) || 0); if (!lvl||lvl<1||lvl>60) throw new Error('Spécifie un niveau 1–60.'); qs += `&levels=${lvl}&unlocked=true&burned=false`; info(`Chargement des kanji du niveau ${lvl}…`); }
     const url = `${API}/assignments?${qs}`;
-    const first = await fetchJson(url, token);
-    let items = first.data || [];
-    let next = first.pages?.next_url;
-    while (next) {
-      const page = await fetchJson(next, token);
-      items = items.concat(page.data || []);
-      next = page.pages?.next_url;
-    }
+    const first = await fetchJson(url, token); let items = first.data || []; let next = first.pages?.next_url;
+    while (next) { const page = await fetchJson(next, token); items = items.concat(page.data || []); next = page.pages?.next_url; }
     return items;
   }
 
-  // ==== Récupération subjects (characters/meanings) en lots ====
   async function fetchSubjects(ids, token) {
-    const unique = Array.from(new Set(ids));
-    const subjects = [];
-    const chunkSize = 950; // /subjects : jusqu'à 1000/page (on reste en dessous)
+    const unique = Array.from(new Set(ids)); const subjects = []; const chunkSize = 950;
     for (let i=0; i<unique.length; i+=chunkSize) {
-      const chunk = unique.slice(i, i+chunkSize);
-      const url = `${API}/subjects?ids=${chunk.join(',')}`;
-      try {
-        const json = await fetchJson(url, token);
-        subjects.push(...(json.data || []));
-        let next = json.pages?.next_url;
-        while (next) {
-          const page = await fetchJson(next, token);
-          subjects.push(...(page.data || []));
-          next = page.pages?.next_url;
-        }
+      const chunk = unique.slice(i, i+chunkSize); const url = `${API}/subjects?ids=${chunk.join(',')}`;
+      try { const json = await fetchJson(url, token); subjects.push(...(json.data || []));
+        let next = json.pages?.next_url; while (next) { const page = await fetchJson(next, token); subjects.push(...(page.data || [])); next = page.pages?.next_url; }
       } catch (e) {
-        console.warn('Bulk /subjects?ids=… a échoué. Fallback /subjects/{id}', e);
-        for (const id of chunk) {
-          if (state.cache[id]) { subjects.push(state.cache[id]); continue; }
-          const single = await fetchJson(`${API}/subjects/${id}`, token);
-          const normalized = single.data ? single : { data: single };
-          state.cache[id] = normalized;
-          subjects.push(normalized);
-        }
+        console.warn('Bulk /subjects?ids=… échoué. Fallback /subjects/{id}', e);
+        for (const id of chunk) { if (state.cache[id]) { subjects.push(state.cache[id]); continue; }
+          const single = await fetchJson(`${API}/subjects/${id}`, token); const normalized = single.data ? single : { data: single };
+          state.cache[id] = normalized; subjects.push(normalized); }
         localStorage.setItem('wk_subject_cache', JSON.stringify(state.cache));
       }
     }
     return subjects.filter(s => (s.data?.object || s.object) === 'kanji' || s.data?.characters);
   }
 
-  // ==== Construire la file et afficher ====
-  function buildQueue(subjects) {
-    const items = subjects.map(s => {
-      const d = s.data || s;
-      const primary = (d.meanings || []).find(m => m.primary)?.meaning
-                   || (d.meanings || [])[0]?.meaning || '(meaning unavailable)';
-      const readings = (d.readings || []).map(r => `${r.type}: ${r.reading}`);
-      return { id: d.id || s.id, characters: d.characters, meaning: primary, allMeanings: d.meanings, readings };
-    }).filter(x => x.characters);
-    for (let i = items.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [items[i], items[j]] = [items[j], items[i]];
+  // ==== SRS STORE ====
+  function loadSrsStore() { return JSON.parse(localStorage.getItem('wk_srs_store') || '{}'); }
+  function saveSrsStore(store) { localStorage.setItem('wk_srs_store', JSON.stringify(store)); }
+  function seedSrsWithSubjects(subjects) {
+    const store = loadSrsStore();
+    for (const s of subjects) {
+      const d = s.data || s; const id = d.id || s.id;
+      if (!store[id]) {
+        store[id] = {
+          subject_id: id,
+          characters: d.characters,
+          meaning: (d.meanings||[]).find(m=>m.primary)?.meaning || (d.meanings||[])[0]?.meaning || '',
+          readings: (d.readings||[]).map(r => `${r.type}: ${r.reading}`),
+          srs_stage: 1,
+          next_review_at: new Date().toISOString(),
+          stats: { correct: 0, incorrect: 0 },
+          last_seen_at: null
+        };
+      }
     }
-    state.queue = items;
+    saveSrsStore(store);
+  }
+  function getDueNowQueue() {
+    const store = loadSrsStore(); const now = Date.now(); const due=[];
+    const byId = Object.fromEntries(state.queue.map(it => [it.id || it.subject_id, it]));
+    for (const [id, it] of Object.entries(store)) {
+      const dueAt = Date.parse(it.next_review_at);
+      if (dueAt <= now && it.srs_stage < 9) {
+        due.push({ id: Number(id), characters: it.characters || byId[id]?.characters, meaning: it.meaning || byId[id]?.meaning, readings: it.readings || byId[id]?.readings, srs_stage: it.srs_stage });
+      }
+    }
+    for (let i = due.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [due[i], due[j]] = [due[j], due[i]]; }
+    return due;
+  }
+  function scheduleNext(itemId, success, wrongCount=1) {
+    const store = loadSrsStore(); const it = store[itemId]; if (!it) return; const now = new Date(); it.last_seen_at = now.toISOString();
+    if (success) { it.srs_stage = Math.min(9, it.srs_stage + 1); it.stats.correct++; }
+    else { it.srs_stage = applyIncorrectPenalty(it.srs_stage, wrongCount); it.stats.incorrect++; }
+    const hours = SRS_STAGES[it.srs_stage].intervalHours;
+    const next = (hours === Infinity) ? new Date(now.getTime() + 365*24*3600*1000) : new Date(now.getTime() + hours*3600*1000);
+    it.next_review_at = next.toISOString(); store[itemId] = it; saveSrsStore(store);
   }
 
+  // ==== Dashboard ====
+  function renderDashboard() {
+    const store = loadSrsStore(); const stages = { A:0, G:0, M:0, E:0, B:0 }; let correct=0, incorrect=0; const now=Date.now(); const dueNow=[], due24=[];
+    for (const it of Object.values(store)) {
+      const s = it.srs_stage;
+      if (s<=4) stages.A++; else if (s<=6) stages.G++; else if (s===7) stages.M++; else if (s===8) stages.E++; else stages.B++;
+      correct += it.stats.correct; incorrect += it.stats.incorrect;
+      const dueAt = Date.parse(it.next_review_at);
+      if (s<9) { if (dueAt<=now) dueNow.push(it); else if (dueAt-now<=24*3600*1000) due24.push(it); }
+    }
+    const acc = (correct+incorrect) ? Math.round(100*correct/(correct+incorrect)) : 100;
+    const setText = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
+    setText('dash-acc', `Acc.: ${acc}%`);
+    setText('dash-now', `Due now: ${dueNow.length}`);
+    setText('dash-24', `24h: ${due24.length}`);
+    setText('dash-stages', `A:${stages.A} | G:${stages.G} | M:${stages.M} | E:${stages.E} | B:${stages.B}`);
+
+    // Mini chart (prévisions des 24h par tranche de 3h)
+    const buckets = new Array(8).fill(0); // 8 * 3h = 24h
+    for (const it of due24) {
+      const delta = Date.parse(it.next_review_at) - now; const h = Math.ceil(delta/3600000);
+      const idx = Math.min(7, Math.max(0, Math.floor((h-1)/3))); buckets[idx]++;
+    }
+    const chart = document.getElementById('chart'); if (chart) {
+      chart.innerHTML = '';
+      const labels = ['0-3h','3-6h','6-9h','9-12h','12-15h','15-18h','18-21h','21-24h'];
+      const max = Math.max(1, ...buckets);
+      buckets.forEach((val,i)=>{
+        const bar = document.createElement('div'); bar.className='bar'; bar.style.height = `${Math.round(100*val/max)}%`;
+        bar.title = `${labels[i]}: ${val}`; chart.appendChild(bar);
+      });
+    }
+  }
+
+  async function startSessionWithDueNow(token) {
+    seedSrsWithSubjects(state.queue);
+    state.queue = getDueNowQueue(); state.index = 0; renderDashboard(); renderCard();
+    if (!state.queue.length) info('Aucun item dû maintenant — regarde le dashboard pour les prochaines révisions.');
+  }
+
+  // ==== Carte ====
   function renderCard() {
-    const card = $('#card');
-    if (!state.queue.length) { info('Rien à afficher.'); if (card) card.hidden = true; return; }
+    const card = $('#card'); if (!state.queue.length) { if (card) card.hidden = true; return; }
     const item = state.queue[state.index % state.queue.length];
     const meaning = $('#meaning'); const kanji = $('#kanji'); const readings = $('#readings');
-    if (meaning) meaning.textContent = item.meaning + (item.allMeanings?.length>1 ? ` (${item.allMeanings.slice(1).map(m=>m.meaning).join(', ')})` : '');
-    if (kanji) { kanji.textContent = item.characters; kanji.style.display = 'none'; }
-    if (readings) { readings.textContent = item.readings.join(' • '); readings.style.display = 'none'; }
-    if (card) card.hidden = false;
-    updateStats();
+    if (meaning) meaning.textContent = item.meaning || '';
+    if (kanji) { kanji.textContent = item.characters || ''; kanji.style.display = 'none'; }
+    if (readings) { readings.textContent = (item.readings||[]).join(' • '); readings.style.display = 'none'; }
+    if (card) card.hidden = false; updateStats();
   }
-
-  function nextCard() { state.index = (state.index + 1) % state.queue.length; renderCard(); }
-  function updateStats() {
-    const s = $('#stats');
-    if (s) s.textContent = `Score: ${state.ok} bon / ${state.ko} faux • Item ${state.index+1}/${Math.max(1, state.queue.length)}`;
-  }
+  function nextCard() { if (!state.queue.length) return; state.index = (state.index + 1) % state.queue.length; renderCard(); }
+  function updateStats() { const s = $('#stats'); if (s) s.textContent = `Score: ${state.ok} bon / ${state.ko} faux • Item ${state.index+1}/${Math.max(1, state.queue.length)}`; }
 
   // ==== DOM prêt ====
   document.addEventListener('DOMContentLoaded', () => {
-    const tokenInput = must('#token');
-    const saveBtn    = must('#saveToken');
-    const clearBtn   = must('#clearToken');
-    const modeSelect = must('#mode');
-    const levelInput = must('#level');
-    const loadBtn    = must('#load');
-    const showBtn    = must('#show');
-    const successBtn = must('#success');
-    const failBtn    = must('#fail');
-    const nextBtn    = must('#next');
+    const tokenInput = must('#token'); const saveBtn = must('#saveToken'); const clearBtn = must('#clearToken');
+    const modeSelect = must('#mode'); const levelInput = must('#level'); const loadBtn = must('#load');
+    const showBtn = must('#show'); const successBtn = must('#success'); const failBtn = must('#fail'); const nextBtn = must('#next');
 
-    // Charger token depuis cookie si présent
-    const cookieToken = getTokenCookie();
-    if (cookieToken) tokenInput.value = cookieToken;
+    // Cookie -> input
+    const cookieToken = getTokenCookie(); if (cookieToken) tokenInput.value = cookieToken;
 
-    // Afficher/cacher champ niveau
-    modeSelect.addEventListener('change', () => {
-      levelInput.style.display = (modeSelect.value === 'level') ? 'inline-block' : 'none';
-    });
+    modeSelect.addEventListener('change', () => { levelInput.style.display = (modeSelect.value === 'level') ? 'inline-block' : 'none'; });
+    saveBtn.addEventListener('click', () => { const t = (tokenInput.value||'').trim(); if (!t) return showError('⚠️ Token vide.'); setTokenCookie(t); info('✅ Token enregistré dans un cookie.'); });
+    clearBtn.addEventListener('click', () => { clearTokenCookie(); info('🧹 Cookie effacé.'); });
 
-    // Enregistrer token -> cookie
-    saveBtn.addEventListener('click', () => {
-      const t = (tokenInput.value || '').trim();
-      if (!t) return showError('⚠️ Token vide. Va sur WaniKani → Settings → API Tokens.');
-      setTokenCookie(t);
-      info('✅ Token enregistré dans un cookie.');
-    });
-
-    // Effacer le cookie (token)
-    clearBtn.addEventListener('click', () => {
-      clearTokenCookie();
-      info('🧹 Cookie effacé. Colle à nouveau ton token si besoin.');
-    });
-
-    // Charger items
     loadBtn.addEventListener('click', async () => {
       try {
-        resetUI();
-        const token = getToken(tokenInput);
-        info('Connexion à WaniKani…');
+        resetUI(); const token = getToken(tokenInput); info('Connexion à WaniKani…');
         const assignments = await fetchAssignments(token, modeSelect, levelInput);
         if (!assignments.length) { info('Aucun kanji pour ce filtre.'); return; }
         const subjects = await fetchSubjects(assignments.map(a => a.data.subject_id), token);
-        buildQueue(subjects);
-        state.index = 0;
-        renderCard();
-        info('✅ Prêt. Dessine, puis “Afficher le kanji”.');
+        // construire file initiale (pour seed SRS)
+        const items = subjects.map(s => { const d=s.data||s; return { id:d.id||s.id, characters:d.characters, meaning:(d.meanings||[]).find(m=>m.primary)?.meaning || (d.meanings||[])[0]?.meaning || '', readings:(d.readings||[]).map(r=>`${r.type}: ${r.reading}`) };});
+        state.queue = items;
+        await startSessionWithDueNow(token);
       } catch (e) { showError(e); console.error('[Load Error]', e); }
     });
 
-    // Boutons carte
-    showBtn.addEventListener('click', () => {
-      const k = $('#kanji'); const r = $('#readings');
-      if (k) k.style.display = 'block';
-      if (r) r.style.display = 'block';
-    });
-    successBtn.addEventListener('click', () => { state.ok++; updateStats(); nextCard(); });
-    failBtn.addEventListener('click', () => { state.ko++; updateStats(); nextCard(); });
+    showBtn.addEventListener('click', () => { const k=$('#kanji'), r=$('#readings'); if (k) k.style.display='block'; if (r) r.style.display='block'; });
+    successBtn.addEventListener('click', () => { const cur = state.queue[state.index % state.queue.length]; if (cur) { scheduleNext(cur.id||cur.subject_id, true, 0); state.ok++; } renderDashboard(); nextCard(); });
+    failBtn.addEventListener('click', () => { const cur = state.queue[state.index % state.queue.length]; if (cur) { scheduleNext(cur.id||cur.subject_id, false, 1); state.ko++; } renderDashboard(); nextCard(); });
     nextBtn.addEventListener('click', () => nextCard());
-  });
 
+    // Première vue Dashboard
+    renderDashboard();
+  });
 })();
 </script>
 </body>
 </html>
-``
