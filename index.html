@@ -31,9 +31,12 @@
 <header>
   <div>
     <div class="label">Token WaniKani (lecture seule)</div>
-    <!-- Tu peux préremplir ici : value="wk_..." -->
+    <!-- MODE "EN CLAIR" : pour préremplir le token en dur, décommente la ligne suivante :
+    <input id="token" type="text" size="48" value="09c154e9-8a05-4c21-a1f2-6196196c1be1" />
+    -->
     <input id="token" type="text" size="48" placeholder="wk_..." />
-    <button id="saveToken">Enregistrer</button>
+    <button id="saveToken">Enregistrer (cookie)</button>
+    <button id="clearToken">Effacer le cookie</button>
   </div>
   <div>
     <div class="label">Sélection</div>
@@ -86,14 +89,11 @@
 
 <script>
 (() => {
-  // --- Constantes API (doc officielle 20170710) ---
+  // ==== Constantes API (doc officielle 20170710) ====
   const API = 'https://api.wanikani.com/v2';
-  const REVISION = '20170710'; // recommandé dans les requêtes (auth/rate-limit/pagination/caching)
-  // Réf. doc : Auth, CORS, pagination, rate-limit, révision 20170710
-  // Source: docs.api.wanikani.com/20170710 (auth, CORS, collections/pages, rate-limit 60 RPM)
-  //        + community post (levels sous forme "1,2,3" et non tableaux JSON)
+  const REVISION = '20170710';
 
-  // --- État global ---
+  // ==== État ====
   const state = {
     queue: [],
     index: 0,
@@ -105,7 +105,7 @@
     lastStatus: ''
   };
 
-  // --- Aides UI ---
+  // ==== Helpers DOM/UI ====
   const $ = (sel) => document.querySelector(sel);
   function info(msg) { const s = $('#status'); if (s) s.textContent = msg; }
   function showError(err) {
@@ -113,65 +113,15 @@
     const msg = (typeof err === 'string') ? err : (err?.message || 'Erreur inconnue');
     if (e) e.textContent = msg;
   }
-
-  // --- Init quand DOM prêt ---
-  document.addEventListener('DOMContentLoaded', () => {
-    // Sélecteurs + gardes
-    const tokenInput = must('#token');
-    const saveBtn    = must('#saveToken');
-    const modeSelect = must('#mode');
-    const levelInput = must('#level');
-    const loadBtn    = must('#load');
-    const showBtn    = must('#show');
-    const successBtn = must('#success');
-    const failBtn    = must('#fail');
-    const nextBtn    = must('#next');
-
-    // Pré-remplir avec LocalStorage si présent
-    const stored = (localStorage.getItem('wk_token') || '').trim();
-    if (stored) tokenInput.value = stored;
-
-    // Afficher/cacher le champ niveau
-    modeSelect.addEventListener('change', () => {
-      levelInput.style.display = (modeSelect.value === 'level') ? 'inline-block' : 'none';
-    });
-
-    // Enregistrer token
-    saveBtn.addEventListener('click', () => {
-      const t = (tokenInput.value || '').trim();
-      if (!t) return showError('⚠️ Token vide. Va sur WaniKani → Settings → API Tokens.');
-      localStorage.setItem('wk_token', t);
-      info('✅ Token enregistré.');
-    });
-
-    // Charger une session
-    loadBtn.addEventListener('click', async () => {
-      try {
-        resetUI();
-        const token = getToken(tokenInput);
-        info('Connexion à WaniKani…');
-        const assignments = await fetchAssignments(token, modeSelect, levelInput);
-        if (!assignments.length) { info('Aucun kanji pour ce filtre.'); return; }
-        const subjects = await fetchSubjects(assignments.map(a => a.data.subject_id), token);
-        buildQueue(subjects);
-        state.index = 0;
-        renderCard();
-        info('✅ Prêt. Dessine, puis clique “Afficher le kanji”.');
-      } catch (e) { showError(e); console.error('[Load Error]', e); }
-    });
-
-    // Boutons de la carte
-    showBtn.addEventListener('click', () => {
-      const k = $('#kanji'); const r = $('#readings');
-      if (k) k.style.display = 'block';
-      if (r) r.style.display = 'block';
-    });
-    successBtn.addEventListener('click', () => { state.ok++; updateStats(); nextCard(); });
-    failBtn.addEventListener('click', () => { state.ko++; updateStats(); nextCard(); });
-    nextBtn.addEventListener('click', () => nextCard());
-  });
-
-  // --- Gardes éléments ---
+  function resetUI() {
+    const e = $('#error'), s = $('#status'), card = $('#card'), k = $('#kanji'), r = $('#readings');
+    if (e) e.textContent = '';
+    if (s) s.textContent = '';
+    if (card) card.hidden = true;
+    if (k) k.style.display = 'none';
+    if (r) r.style.display = 'none';
+    state.ok = 0; state.ko = 0; updateStats();
+  }
   function must(selector) {
     const el = $(selector);
     if (!el) {
@@ -182,14 +132,32 @@
     return el;
   }
 
-  // --- Token ---
+  // ==== Cookies (token) ====
+  // NOTE: En statique, on ne peut pas mettre HttpOnly. On mettra Secure + SameSite=Lax, et un max-age long.
+  function setTokenCookie(token) {
+    const maxAge = 60 * 60 * 24 * 365; // 1 an
+    // Cookie attribué au chemin racine ; 'Secure' nécessite HTTPS
+    document.cookie = `wk_token=${encodeURIComponent(token)}; Max-Age=${maxAge}; Path=/; SameSite=Lax; Secure`;
+  }
+  function getTokenCookie() {
+    const m = document.cookie.match(/(?:^|; )wk_token=([^;]*)/);
+    return m ? decodeURIComponent(m[1]) : '';
+  }
+  function clearTokenCookie() {
+    document.cookie = `wk_token=; Max-Age=0; Path=/; SameSite=Lax; Secure`;
+  }
+
+  // ==== Token (priorité : cookie > input > localStorage pour compat ascendante) ====
   function getToken(tokenInput) {
-    const t = (tokenInput.value || localStorage.getItem('wk_token') || '').trim();
-    if (!t) throw new Error('⚠️ Token requis. Colle ton token WaniKani (lecture seule).');
+    const fromCookie = getTokenCookie();
+    const fromInput = (tokenInput.value || '').trim();
+    const fromLS = (localStorage.getItem('wk_token') || '').trim();
+    const t = (fromCookie || fromInput || fromLS).trim();
+    if (!t) throw new Error('⚠️ Token requis. Colle ton token WaniKani (lecture seule) puis “Enregistrer (cookie)”.');
     return t;
   }
 
-  // --- Diagnostics headers ---
+  // ==== Diagnostics headers ====
   function updateDiagnostics(url, res) {
     state.lastUrl = url;
     state.lastStatus = `${res.status} ${res.statusText}`;
@@ -210,12 +178,13 @@
     set('#diag-last', state.lastHeaders.last);
   }
 
-  // --- Fetch JSON avec gestion 429 / erreurs détaillées ---
+  // ==== Fetch JSON avec gestion 429 / erreurs détaillées ====
   async function fetchJson(url, token) {
-    const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}`, 'Wanikani-Revision': REVISION }});
+    const res = await fetch(url, {
+      headers: { 'Authorization': `Bearer ${token}`, 'Wanikani-Revision': REVISION }
+    });
     updateDiagnostics(url, res);
 
-    // 429 Too Many Requests : attendre RateLimit-Reset (doc : 60 req/min)
     if (res.status === 429) {
       const reset = Number(res.headers.get('RateLimit-Reset')) || 0;
       const now = Math.floor(Date.now()/1000);
@@ -240,12 +209,12 @@
     return res.json();
   }
 
-  // --- Récupération assignments suivant le mode ---
+  // ==== Récupération assignments selon le mode ====
   async function fetchAssignments(token, modeSelect, levelInput) {
     const mode = modeSelect.value;
     let qs = `subject_types=kanji&hidden=false`;
     if (mode === 'now') {
-      const now = new Date().toISOString(); // ISO 8601 UTC
+      const now = new Date().toISOString();
       qs += `&available_before=${encodeURIComponent(now)}`;
       info('Chargement des kanji “dus” maintenant…');
     } else if (mode === 'unlocked') {
@@ -269,11 +238,11 @@
     return items;
   }
 
-  // --- Récupération subjects (characters/meanings) en lots (≤ 1000/page) ---
+  // ==== Récupération subjects (characters/meanings) en lots ====
   async function fetchSubjects(ids, token) {
     const unique = Array.from(new Set(ids));
     const subjects = [];
-    const chunkSize = 950; // rester sous 1000/ page pour /subjects
+    const chunkSize = 950; // /subjects : jusqu'à 1000/page (on reste en dessous)
     for (let i=0; i<unique.length; i+=chunkSize) {
       const chunk = unique.slice(i, i+chunkSize);
       const url = `${API}/subjects?ids=${chunk.join(',')}`;
@@ -298,11 +267,10 @@
         localStorage.setItem('wk_subject_cache', JSON.stringify(state.cache));
       }
     }
-    // Garder uniquement les kanji (data.object === 'kanji') et ceux avec .characters
     return subjects.filter(s => (s.data?.object || s.object) === 'kanji' || s.data?.characters);
   }
 
-  // --- Construire la file et rendre ---
+  // ==== Construire la file et afficher ====
   function buildQueue(subjects) {
     const items = subjects.map(s => {
       const d = s.data || s;
@@ -311,7 +279,6 @@
       const readings = (d.readings || []).map(r => `${r.type}: ${r.reading}`);
       return { id: d.id || s.id, characters: d.characters, meaning: primary, allMeanings: d.meanings, readings };
     }).filter(x => x.characters);
-    // Shuffle
     for (let i = items.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [items[i], items[j]] = [items[j], items[i]];
@@ -319,7 +286,6 @@
     state.queue = items;
   }
 
-  // --- UI carte ---
   function renderCard() {
     const card = $('#card');
     if (!state.queue.length) { info('Rien à afficher.'); if (card) card.hidden = true; return; }
@@ -338,6 +304,71 @@
     if (s) s.textContent = `Score: ${state.ok} bon / ${state.ko} faux • Item ${state.index+1}/${Math.max(1, state.queue.length)}`;
   }
 
+  // ==== DOM prêt ====
+  document.addEventListener('DOMContentLoaded', () => {
+    const tokenInput = must('#token');
+    const saveBtn    = must('#saveToken');
+    const clearBtn   = must('#clearToken');
+    const modeSelect = must('#mode');
+    const levelInput = must('#level');
+    const loadBtn    = must('#load');
+    const showBtn    = must('#show');
+    const successBtn = must('#success');
+    const failBtn    = must('#fail');
+    const nextBtn    = must('#next');
+
+    // Charger token depuis cookie si présent
+    const cookieToken = getTokenCookie();
+    if (cookieToken) tokenInput.value = cookieToken;
+
+    // Afficher/cacher champ niveau
+    modeSelect.addEventListener('change', () => {
+      levelInput.style.display = (modeSelect.value === 'level') ? 'inline-block' : 'none';
+    });
+
+    // Enregistrer token -> cookie
+    saveBtn.addEventListener('click', () => {
+      const t = (tokenInput.value || '').trim();
+      if (!t) return showError('⚠️ Token vide. Va sur WaniKani → Settings → API Tokens.');
+      setTokenCookie(t);
+      info('✅ Token enregistré dans un cookie.');
+    });
+
+    // Effacer le cookie (token)
+    clearBtn.addEventListener('click', () => {
+      clearTokenCookie();
+      info('🧹 Cookie effacé. Colle à nouveau ton token si besoin.');
+    });
+
+    // Charger items
+    loadBtn.addEventListener('click', async () => {
+      try {
+        resetUI();
+        const token = getToken(tokenInput);
+        info('Connexion à WaniKani…');
+        const assignments = await fetchAssignments(token, modeSelect, levelInput);
+        if (!assignments.length) { info('Aucun kanji pour ce filtre.'); return; }
+        const subjects = await fetchSubjects(assignments.map(a => a.data.subject_id), token);
+        buildQueue(subjects);
+        state.index = 0;
+        renderCard();
+        info('✅ Prêt. Dessine, puis “Afficher le kanji”.');
+      } catch (e) { showError(e); console.error('[Load Error]', e); }
+    });
+
+    // Boutons carte
+    showBtn.addEventListener('click', () => {
+      const k = $('#kanji'); const r = $('#readings');
+      if (k) k.style.display = 'block';
+      if (r) r.style.display = 'block';
+    });
+    successBtn.addEventListener('click', () => { state.ok++; updateStats(); nextCard(); });
+    failBtn.addEventListener('click', () => { state.ko++; updateStats(); nextCard(); });
+    nextBtn.addEventListener('click', () => nextCard());
+  });
+
 })();
 </script>
-</</body>
+</body>
+</html>
+``
